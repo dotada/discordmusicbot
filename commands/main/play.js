@@ -1,4 +1,4 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
 const { joinVoiceChannel } = require('@discordjs/voice');
 const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource } = require('@discordjs/voice');
 const fs = require('fs');
@@ -36,6 +36,19 @@ module.exports = {
                     .setDescription('Whether or not to loop the song')
         ),
     async execute(interaction) {
+        const loopbtn = new ButtonBuilder()
+            .setCustomId('loopbtn')
+            .setLabel('Loop')
+            .setStyle(ButtonStyle.Primary)
+            .setEmoji('🔁');
+        
+        const row = new ActionRowBuilder()
+            .addComponents(loopbtn);        
+
+        let loop = false;
+        if (interaction.options.getBoolean('loop') ?? false) {
+            loop = true;
+        }
         interaction.deferReply()
             .then()
             .catch(console.error);
@@ -59,7 +72,7 @@ module.exports = {
         let resource = createAudioResource(`./file_${guildId}.webm`);
         player.play(resource);
         connection.subscribe(player);
-        if (interaction.options.getBoolean('loop') ?? false) {
+        if (loop) {
             player.on(AudioPlayerStatus.Idle, () => {
                 resource = createAudioResource(`./file_${guildId}.webm`);
                 player.play(resource);
@@ -74,8 +87,40 @@ module.exports = {
         player.on('error', () => {
             connection.destroy();
         });
-        ytdl.getInfo(interaction.options.getString('link'), {agent: agent}).then(async info => {
-            await interaction.editReply(`Playing: [${info.videoDetails.title}](<${interaction.options.getString('link')}>)`);
+
+        let link = interaction.options.getString('link');
+
+        ytdl.getInfo(link, {agent: agent}).then(async info => {
+            const embed = new EmbedBuilder()
+                .setColor(0xFFFFFF)
+                .setTitle("**Now Playing**")
+                .setDescription(`[**${info.videoDetails.title}**](<${link}>)`);
+            const msg = await interaction.editReply({components: [row], embeds: [embed]});
+            const filter = i => i.customId === 'loopbtn';
+            const collector = msg.createMessageComponentCollector({filter});
+            let firstreply = false;
+            let reply;
+            collector.on('collect', async i => {
+                loop = !loop;
+                const embede = new EmbedBuilder()
+                  .setColor(0xFFFFFF)
+                  .setTitle('**Loop**')
+                  .setDescription(loop ? '**Now Looping**' : '**Now Not Looping**');
+                
+                if (!firstreply) {
+                  reply = await i.reply({ embeds: [embede], fetchReply: true }).then((message) => reply = message);
+                  firstreply = true;
+                } else {
+                    await reply.edit({embeds:[embede]}).then(() => {});
+                    await i.update({ embeds: [embed] });
+                }
+            });
+            connection.on('stateChange', async i => {
+                if (i.status == 'ready') {
+                    loopbtn.setDisabled(true);
+                    await interaction.editReply({components: [row], embeds: [embed]});
+                }
+            })
         });
     },
 };
