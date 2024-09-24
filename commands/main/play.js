@@ -1,6 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
-const { joinVoiceChannel } = require('@discordjs/voice');
-const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource } = require('@discordjs/voice');
+const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource, getVoiceConnection, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const ytdl = require('@distube/ytdl-core');
 
@@ -41,9 +40,15 @@ module.exports = {
             .setLabel('Loop')
             .setStyle(ButtonStyle.Primary)
             .setEmoji('🔁');
+
+        const stopbtn = new ButtonBuilder()
+            .setCustomId('stopbtn')
+            .setLabel('Stop')
+            .setStyle(ButtonStyle.Danger)
+            .setEmoji('✖️');
         
         const row = new ActionRowBuilder()
-            .addComponents(loopbtn);        
+            .addComponents(loopbtn, stopbtn);        
 
         let loop = false;
         if (interaction.options.getBoolean('loop') ?? false) {
@@ -96,31 +101,40 @@ module.exports = {
                 .setTitle("**Now Playing**")
                 .setDescription(`[**${info.videoDetails.title}**](<${link}>)`);
             const msg = await interaction.editReply({components: [row], embeds: [embed]});
-            const filter = i => i.customId === 'loopbtn';
+            const filter = i => i.customId === 'loopbtn' || i.customId === 'stopbtn';
             const collectorloop = msg.createMessageComponentCollector({filter});
             let firstreply = false;
             let reply;
             collectorloop.on('collect', async i => {
-                loop = !loop;
-                const embede = new EmbedBuilder()
-                  .setColor(0xFFFFFF)
-                  .setTitle('**Loop**')
-                  .setDescription(loop ? '**Now Looping**' : '**Now Not Looping**');
-                
-                if (!firstreply) {
-                  reply = await i.reply({ embeds: [embede], fetchReply: true }).then((message) => reply = message);
-                  firstreply = true;
-                } else {
-                    await reply.edit({embeds:[embede]}).then(() => {});
+                if (i.customId === 'loopbtn') {
+                    loop = !loop;
+                    const embede = new EmbedBuilder()
+                        .setColor(0xFFFFFF)
+                        .setTitle('**Loop**')
+                        .setDescription(loop ? '**Now Looping**' : '**Now Not Looping**');
+                    
+                    if (!firstreply) {
+                        reply = await i.reply({ embeds: [embede], fetchReply: true }).then((message) => reply = message);
+                        firstreply = true;
+                    } else {
+                        await reply.edit({embeds:[embede]}).then(() => {});
+                        await i.update({ embeds: [embed] });
+                    }
+                } else if (i.customId === 'stopbtn') {
+                    getVoiceConnection(i.guildId).destroy();
                     await i.update({ embeds: [embed] });
                 }
             });
             connection.on('stateChange', async i => {
                 if (i.status == 'ready') {
                     loopbtn.setDisabled(true);
+                    stopbtn.setDisabled(true);
                     await interaction.editReply({components: [row], embeds: [embed]});
+                    if (reply != null) {
+                        await reply.delete();
+                    }
                 }
-            })
+            });
         });
     },
 };
