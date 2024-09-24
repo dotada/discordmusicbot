@@ -97,10 +97,10 @@ module.exports = {
                 .setDescription(`[**${info.videoDetails.title}**](<${link}>)`);
             const msg = await interaction.editReply({components: [row], embeds: [embed]});
             const filter = i => i.customId === 'loopbtn';
-            const collector = msg.createMessageComponentCollector({filter});
+            const collectorloop = msg.createMessageComponentCollector({filter});
             let firstreply = false;
             let reply;
-            collector.on('collect', async i => {
+            collectorloop.on('collect', async i => {
                 loop = !loop;
                 const embede = new EmbedBuilder()
                   .setColor(0xFFFFFF)
