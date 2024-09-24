@@ -21,6 +21,21 @@ async function downloadMp3(url, destinationPath) {
     });
   }
 
+  const loopbtn = new ButtonBuilder()
+  .setCustomId('loopbtn')
+  .setLabel('Loop')
+  .setStyle(ButtonStyle.Primary)
+  .setEmoji('🔁');
+
+const stopbtn = new ButtonBuilder()
+  .setCustomId('stopbtn')
+  .setLabel('Stop')
+  .setStyle(ButtonStyle.Danger)
+  .setEmoji('✖️');
+
+  loopbtn.setDisabled(false);
+  stopbtn.setDisabled(false);
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
@@ -29,31 +44,14 @@ module.exports = {
             option.setName('link')
                 .setDescription('The link to the video that should be played')
                 .setRequired(true)
-        )
-        .addBooleanOption(option =>
-            option.setName('loop')
-                    .setDescription('Whether or not to loop the song')
         ),
     async execute(interaction) {
-        const loopbtn = new ButtonBuilder()
-            .setCustomId('loopbtn')
-            .setLabel('Loop')
-            .setStyle(ButtonStyle.Primary)
-            .setEmoji('🔁');
-
-        const stopbtn = new ButtonBuilder()
-            .setCustomId('stopbtn')
-            .setLabel('Stop')
-            .setStyle(ButtonStyle.Danger)
-            .setEmoji('✖️');
+        
         
         const row = new ActionRowBuilder()
             .addComponents(loopbtn, stopbtn);        
 
         let loop = false;
-        if (interaction.options.getBoolean('loop') ?? false) {
-            loop = true;
-        }
         interaction.deferReply()
             .then()
             .catch(console.error);
@@ -77,17 +75,6 @@ module.exports = {
         let resource = createAudioResource(`./file_${guildId}.webm`);
         player.play(resource);
         connection.subscribe(player);
-        if (loop) {
-            player.on(AudioPlayerStatus.Idle, () => {
-                resource = createAudioResource(`./file_${guildId}.webm`);
-                player.play(resource);
-            });
-        } else {
-            player.on(AudioPlayerStatus.Idle, () => {
-                connection.destroy();
-                player.stop();
-            });
-        }
         
         player.on('error', () => {
             connection.destroy();
@@ -108,6 +95,23 @@ module.exports = {
             collectorloop.on('collect', async i => {
                 if (i.customId === 'loopbtn') {
                     loop = !loop;
+                    if (loop) {
+                        player.on(AudioPlayerStatus.Idle, () => {
+                            resource = createAudioResource(`./file_${guildId}.webm`);
+                            player.play(resource);
+                        });
+                    } else {
+                        player.on(AudioPlayerStatus.Idle, async () => {
+                            connection.destroy();
+                            player.stop();
+                            loopbtn.setDisabled(true);
+                            stopbtn.setDisabled(true);
+                            await interaction.editReply({components: [row], embeds: [embed]});
+                            if (reply != null) {
+                                await reply.delete();
+                            }
+                        });
+                    }
                     const embede = new EmbedBuilder()
                         .setColor(0xFFFFFF)
                         .setTitle('**Loop**')
@@ -126,12 +130,24 @@ module.exports = {
                 }
             });
             connection.on('stateChange', async i => {
+                console.log(i.status);
                 if (i.status == 'ready') {
-                    loopbtn.setDisabled(true);
-                    stopbtn.setDisabled(true);
-                    await interaction.editReply({components: [row], embeds: [embed]});
-                    if (reply != null) {
-                        await reply.delete();
+                    if (loop) {
+                        player.on(AudioPlayerStatus.Idle, () => {
+                            resource = createAudioResource(`./file_${guildId}.webm`);
+                            player.play(resource);
+                        });
+                    } else {
+                        player.on(AudioPlayerStatus.Idle, async () => {
+                            connection.destroy();
+                            player.stop();
+                            loopbtn.setDisabled(true);
+                            stopbtn.setDisabled(true);
+                            await interaction.editReply({components: [row], embeds: [embed]});
+                            if (reply != null) {
+                                await reply.delete();
+                            }
+                        });
                     }
                 }
             });
