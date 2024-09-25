@@ -126,7 +126,9 @@ module.exports = {
                     }
                 } else if (i.customId === 'stopbtn') {
                     getVoiceConnection(i.guildId).destroy();
-                    await i.update({ embeds: [embed] });
+                    loopbtn.setDisabled(true);
+                    stopbtn.setDisabled(true);
+                    await i.update({ embeds: [embed], components: [row] });
                 }
             });
             connection.on('stateChange', async i => {
