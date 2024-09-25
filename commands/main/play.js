@@ -46,8 +46,8 @@ module.exports = {
                 .setRequired(true)
         ),
     async execute(interaction) {
-        
-        
+        loopbtn.setDisabled(false);
+        stopbtn.setDisabled(false);
         const row = new ActionRowBuilder()
             .addComponents(loopbtn, stopbtn);        
 
@@ -125,10 +125,14 @@ module.exports = {
                         await i.update({ embeds: [embed] });
                     }
                 } else if (i.customId === 'stopbtn') {
-                    getVoiceConnection(i.guildId).destroy();
+                    connection.destroy();
                     loopbtn.setDisabled(true);
                     stopbtn.setDisabled(true);
+                    player.stop();
                     await i.update({ embeds: [embed], components: [row] });
+                    if (reply != null) {
+                        await reply.delete();
+                    }
                 }
             });
             connection.on('stateChange', async i => {
