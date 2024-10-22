@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
-const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource, getVoiceConnection, joinVoiceChannel } = require('@discordjs/voice');
+const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const ytdl = require('@distube/ytdl-core');
 const path = require("path");
