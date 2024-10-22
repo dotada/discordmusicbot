@@ -1,0 +1,24 @@
+{
+  "name": "discordmusicbot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@discordjs/voice": "^0.17.0",
+    "@distube/ytdl-core": "^4.14.4",
+    "discord.js": "^14.16.2",
+    "googleapis": "^144.0.0",
+    "libsodium-wrappers": "^0.7.15",
+    "memfs": "^4.12.0",
+    "opusscript": "^0.0.8"
+  },
+  "devDependencies": {
+    "eslint": "^9.11.0"
+  }
+}

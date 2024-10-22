@@ -3,5 +3,4 @@ node_modules
 config.json
 cookies.json
 package-lock.json
-package.json
 *.webm
