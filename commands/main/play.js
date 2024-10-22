@@ -37,9 +37,6 @@ const stopbtn = new ButtonBuilder()
   .setStyle(ButtonStyle.Danger)
   .setEmoji('✖️');
 
-  loopbtn.setDisabled(false);
-  stopbtn.setDisabled(false);
-
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('play')
@@ -57,7 +54,7 @@ module.exports = {
                 .addComponents(loopbtn, stopbtn);        
 
             let loop = false;
-            interaction.deferReply()
+            await interaction.deferReply()
                 .then()
                 .catch(console.error);
             let channelId = interaction.member.voice.channelId;
@@ -68,7 +65,7 @@ module.exports = {
                 .catch(err => console.error('Error:', err));
             const player = createAudioPlayer({
                 behaviors: {
-                    noSubscriber: NoSubscriberBehavior.Pause,
+                    noSubscriber: NoSubscriberBehavior.Stop,
                 },
             });
             //https://file-examples.com/storage/fee0ddbaf066ed3199cfa16/2017/11/file_example_MP3_5MG.mp3
@@ -81,8 +78,9 @@ module.exports = {
             player.play(resource);
             connection.subscribe(player);
 
-            player.on('error', () => {
+            player.on('error', async (err) => {
                 connection.destroy();
+                await interaction.editReply({content: err, ephemeral: true});
             });
 
             let link = interaction.options.getString('link');
