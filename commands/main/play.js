@@ -6,27 +6,6 @@ const path = require("path");
 const access = require('fs/promises');
 
 const agent = ytdl.createAgent(JSON.parse(fs.readFileSync("cookies.json")));
-/*
-async function downloadMp3(url, destinationPath) {
-    return new Promise((resolve, reject) => {
-        const file = fs.createWriteStream(destinationPath);
-        if (ytdl.validateURL(url)) {
-            let stream = ytdl(url, {
-                quality: 'highestaudio',
-                filter: 'audioonly',
-                agent: agent,
-            }).pipe(file);
-            stream.on('finish', () => {
-                file.close(() => resolve(`File downloaded to ${destinationPath}`));
-            }).on('error', (err) => {
-                fs.unlink(destinationPath, () => reject(err));
-            });
-        } else {
-            reject("Not a valid URL");
-        }
-    });
-  }
-*/
 
 async function downloadMp3(url, destinationPath, title) {
     return new Promise((resolve, reject) => {
