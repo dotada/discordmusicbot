@@ -2,6 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRow
 const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const ytdl = require('@distube/ytdl-core');
+const path = require("path");
 const access = require('fs/promises');
 const { ytDataAPI } = require('../../config.json');
 
@@ -9,7 +10,7 @@ const agent = ytdl.createAgent(JSON.parse(fs.readFileSync("cookies.json")));
 
 async function downloadMp3(url, destinationPath, title) {
     return new Promise((resolve, reject) => {
-        access.access(`../../${title}.webm`, fs.constants.F_OK).then(() => {
+        access.access(path.join(__dirname, "../../" ,`${title}.webm`), fs.constants.F_OK).then(() => {
             resolve("exists");
         }).catch(error => {
             const file = fs.createWriteStream(destinationPath);
