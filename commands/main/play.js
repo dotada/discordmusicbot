@@ -2,9 +2,11 @@ const { SlashCommandBuilder, EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRow
 const { createAudioPlayer, NoSubscriberBehavior, AudioPlayerStatus, createAudioResource, getVoiceConnection, joinVoiceChannel } = require('@discordjs/voice');
 const fs = require('fs');
 const ytdl = require('@distube/ytdl-core');
+const path = require("path");
+const access = require('fs/promises');
 
 const agent = ytdl.createAgent(JSON.parse(fs.readFileSync("cookies.json")));
-
+/*
 async function downloadMp3(url, destinationPath) {
     return new Promise((resolve, reject) => {
         const file = fs.createWriteStream(destinationPath);
@@ -24,8 +26,33 @@ async function downloadMp3(url, destinationPath) {
         }
     });
   }
+*/
 
-  const loopbtn = new ButtonBuilder()
+async function downloadMp3(url, destinationPath, title) {
+    return new Promise((resolve, reject) => {
+        access.access(path.join('C:\\Users\\deja\\discordmusicbot\\', `${title}.webm`), fs.constants.F_OK).then(() => {
+            resolve("exists");
+        }).catch(error => {
+            const file = fs.createWriteStream(destinationPath);
+            if (ytdl.validateURL(url)) {
+                let stream = ytdl(url, {
+                    quality: 'highestaudio',
+                    filter: 'audioonly',
+                    agent: agent,
+                }).pipe(file);
+                stream.on('finish', () => {
+                    file.close(() => resolve(`File downloaded to ${destinationPath}`));
+                }).on('error', (err) => {
+                    fs.unlink(destinationPath, () => reject(err));
+                });
+            } else {
+                reject("Not a valid URL");
+            }
+        });
+    })
+}
+
+const loopbtn = new ButtonBuilder()
   .setCustomId('loopbtn')
   .setLabel('Loop')
   .setStyle(ButtonStyle.Primary)
@@ -60,12 +87,13 @@ module.exports = {
             let channelId = interaction.member.voice.channelId;
             let guildId = interaction.member.voice.guild.id;
             let adapterCreator = interaction.member.voice.guild.voiceAdapterCreator;
-            await downloadMp3(interaction.options.getString('link'), `./file_${guildId}.webm`)
+            let title = (await ytdl.getInfo(interaction.options.getString('link'))).videoDetails.videoId;
+            await downloadMp3(interaction.options.getString('link'), `./${title}.webm`, title)
                 .then(message => console.log(message))
                 .catch(err => console.error('Error:', err));
             const player = createAudioPlayer({
                 behaviors: {
-                    noSubscriber: NoSubscriberBehavior.Stop,
+                    noSubscriber: NoSubscriberBehavior.Pause,
                 },
             });
             //https://file-examples.com/storage/fee0ddbaf066ed3199cfa16/2017/11/file_example_MP3_5MG.mp3
@@ -74,13 +102,13 @@ module.exports = {
                 guildId: guildId,
                 adapterCreator: adapterCreator,
             });
-            let resource = createAudioResource(`./file_${guildId}.webm`);
+            let resource = createAudioResource(`./${title}.webm`);
             player.play(resource);
             connection.subscribe(player);
 
             player.on('error', async (err) => {
                 connection.destroy();
-                await interaction.editReply({content: err, ephemeral: true});
+                await interaction.editReply({content: err.message, ephemeral: true});
             });
 
             let link = interaction.options.getString('link');
@@ -100,7 +128,7 @@ module.exports = {
                         loop = !loop;
                         if (loop) {
                             player.on(AudioPlayerStatus.Idle, () => {
-                                resource = createAudioResource(`./file_${guildId}.webm`);
+                                resource = createAudioResource(`./${title}.webm`);
                                 player.play(resource);
                             });
                         } else {
@@ -143,7 +171,7 @@ module.exports = {
                     if (i.status == 'ready') {
                         if (loop) {
                             player.on(AudioPlayerStatus.Idle, () => {
-                                resource = createAudioResource(`./file_${guildId}.webm`);
+                                resource = createAudioResource(`./${title}.webm`);
                                 player.play(resource);
                             });
                         } else {
@@ -162,7 +190,7 @@ module.exports = {
                 });
             });
         } else {
-            await interaction.reply({content: "Invalid video URL " + interaction.options.getString('link'), ephemeral: true})
+            
         }
     },
 };
