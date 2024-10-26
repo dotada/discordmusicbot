@@ -167,7 +167,11 @@ module.exports = {
         ),
     async execute(interaction) {
         if (ytdl.validateURL(interaction.options.getString('link'))) {
-            await play(interaction, interaction.options.getString('link'));
+            if ((await ytdl.getInfo(interaction.options.getString('link'))).videoDetails.lengthSeconds > 1800) {
+                await interaction.reply({content: "Sorry, no videos over 30 minutes allowed.", ephemeral: true});
+            } else {
+                await play(interaction, interaction.options.getString('link'));
+            }
         } else {
             const {google} = require('googleapis');
             "use strict";
@@ -179,7 +183,11 @@ module.exports = {
                 part: 'id, snippet',
                 q: interaction.options.getString('link'),
             }).then(async res => {
-                await play(interaction, `https://www.youtube.com/watch?v=${res.data.items[0].id.videoId}`);
+                if ((await ytdl.getInfo(`https://www.youtube.com/watch?v=${res.data.items[0].id.videoId}`)).videoDetails.lengthSeconds > 1800) {
+                    await interaction.reply({content: "Sorry, no videos over 30 minutes allowed.", ephemeral: true});
+                } else {
+                    await play(interaction, `https://www.youtube.com/watch?v=${res.data.items[0].id.videoId}`);
+                }
             }).catch(async error => {
                 await interaction.reply({content: error, ephemeral: true});
             })
